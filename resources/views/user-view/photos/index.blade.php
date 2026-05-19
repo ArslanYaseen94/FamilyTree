@@ -25,19 +25,14 @@
         <div class="middle-sidebar-left pe-0">
             <div class="container mt-4">
                 <h4>{{ __('messages.Upload a Photo') }}</h4>
-                <form action="{{ route('user.upload.photo') }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('user.upload.photo') }}" method="POST" enctype="multipart/form-data" id="photoUploadForm">
                     @csrf
                     <div class="mb-3">
-                        <input type="file" name="media[]" class="form-control" required multiple accept="image/*,video/*">
+                        <input type="file" name="media[]" id="mediaInput" class="form-control" required multiple accept="image/jpeg,image/jpg,image/png,image/gif,image/bmp,image/webp,image/svg+xml">
+                        <small class="text-muted">{{ __('messages.Only photo files allowed: jpeg, jpg, png, gif, bmp, webp, svg. Max 5MB each.') }}</small>
                     </div>
-                    <button type="submit" class="btn btn-primary">{{ __('messages.Upload Media') }}</button>
+                    <button type="submit" class="btn btn-primary" id="uploadBtn">{{ __('messages.Upload Photos') }}</button>
                 </form>
-
-                @if (session('success'))
-                    <div class="alert alert-success mt-3">
-                        {{ session('success') }}
-                    </div>
-                @endif
             </div>
 
             <div class="container mt-4">
@@ -48,22 +43,12 @@
                         @foreach ($photos as $photo)
                             @php
                                 $extension = strtolower(pathinfo($photo, PATHINFO_EXTENSION));
-                                $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
-                                $isVideo = in_array($extension, ['mp4', 'mov', 'webm', 'ogg']);
+                                $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']);
                             @endphp
+                            @if ($isImage)
                             <div class="col-md-3 mb-4">
                                 <div class="card media-wrapper position-relative">
-                                    @if ($isImage)
-                                        <img src="{{ $photo }}" class="media-card" alt="User Photo or Video Thumbnail">
-                                    @elseif ($isVideo)
-                                        <video class="media-card" controls>
-                                            <source src="{{ $photo }}" type="video/{{ $extension }}">
-                                            Your browser does not support the video tag.
-                                        </video>
-                                    @else
-                                        <p class="text-center p-3">Unsupported file format.</p>
-                                    @endif
-
+                                    <img src="{{ $photo }}" class="media-card" alt="User Photo">
                                     <button
                                         class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 delete-photo-btn"
                                         data-photo="{{ $photo }}" title="Delete">
@@ -71,10 +56,11 @@
                                     </button>
                                 </div>
                             </div>
+                            @endif
                         @endforeach
                     </div>
                 @else
-                    <p>No media uploaded yet.</p>
+                    <p>{{ __('messages.No photos uploaded yet.') }}</p>
                 @endif
             </div>
         </div>
@@ -84,6 +70,35 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        var allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp', 'image/svg+xml'];
+        var maxSize = 5 * 1024 * 1024; // 5MB
+
+        document.getElementById('photoUploadForm').addEventListener('submit', function(e) {
+            var files = document.getElementById('mediaInput').files;
+
+            if (files.length === 0) {
+                e.preventDefault();
+                toastr.error('{{ __("messages.Please select at least one photo.") }}');
+                return;
+            }
+
+            for (var i = 0; i < files.length; i++) {
+                if (!allowedTypes.includes(files[i].type)) {
+                    e.preventDefault();
+                    toastr.error('{{ __("messages.Only image files are allowed. No videos or audio files.") }}');
+                    return;
+                }
+                if (files[i].size > maxSize) {
+                    e.preventDefault();
+                    toastr.error(files[i].name + ' {{ __("messages.exceeds the 5MB size limit.") }}');
+                    return;
+                }
+            }
+
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('uploadBtn').innerHTML = '<span class="spinner-border spinner-border-sm"></span> {{ __("messages.Uploading...") }}';
+        });
+
         document.querySelectorAll('.delete-photo-btn').forEach(button => {
             button.addEventListener('click', function () {
                 const photoUrl = this.getAttribute('data-photo');
@@ -110,14 +125,14 @@
                         .then(res => res.json())
                         .then(data => {
                             if (data.success) {
-                                Swal.fire('Deleted!', data.message, 'success')
-                                    .then(() => location.reload());
+                                toastr.success(data.message);
+                                setTimeout(() => location.reload(), 1000);
                             } else {
-                                Swal.fire('Error', data.message, 'error');
+                                toastr.error(data.message);
                             }
                         })
                         .catch(() => {
-                            Swal.fire('Error', 'Something went wrong.', 'error');
+                            toastr.error('{{ __("messages.Something went wrong.") }}');
                         });
                     }
                 });

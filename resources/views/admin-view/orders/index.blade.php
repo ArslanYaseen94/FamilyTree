@@ -52,6 +52,9 @@
                          @endif
                      </tbody>
                  </table>
+             <div class="d-flex justify-content-end mt-3">
+                 {{ $order->links('pagination::bootstrap-5') }}
+             </div>
              </div><!-- component-section -->
          </div><!-- content-body -->
      </div><!-- content -->
@@ -111,19 +114,22 @@
  @endsection
  @section('scripts')
      <script>
-         $(function() {
-             'use strict'
-             $('#example1').DataTable({
-                 User: {
-                     searchPlaceholder: 'Search...',
-                     sSearch: '',
-                 }
-             });
-             // Select2
-             $('.dataTables_length select').select2({
-                 minimumResultsForSearch: Infinity
-             });
-         });
+        $(function() {
+            'use strict'
+            $('#example1').DataTable({
+                paging: false,
+                info: false,
+                lengthChange: false,
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search records"
+                }
+            });
+            // Select2
+            $('.dataTables_length select').select2({
+                minimumResultsForSearch: Infinity
+            });
+        });
 
          $('.deactivate-User-btn').click(function() {
              var UserId = $(this).data('id');

@@ -22,6 +22,7 @@ use App\Http\Controllers\User\FamilyTreeController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\User\UserRegisterController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\DeathCertificateController;
 use Illuminate\Support\Facades\Route;
 
 // Stripe webhook endpoint (must be outside authentication)
@@ -76,6 +77,7 @@ Route::namespace('User')->group(function () {
         Route::post('/user/message/store', [MessagesController::class, 'usersstore'])->name('user.message.store');
         Route::get("import", [ImportController::class, "index"])->name("user.import");
         Route::get("export", [ImportController::class, "export"])->name("user.export");
+        Route::get('/import/sample-csv', [ImportController::class, 'downloadSample'])->name('import.sample.csv');
         Route::post('/export-members', [ImportController::class, 'exportMembers'])->name('export.members');
         Route::get('/messages/{id}', [MessagesController::class, 'usershow'])->name('user.messages.show');
         Route::post('/messages/{id}/reply', [MessagesController::class, 'userReply'])->name('user.messages.reply');
@@ -105,6 +107,10 @@ Route::namespace('User')->group(function () {
             return view('user-view.settings.password');
         });
         Route::post('changepassword', 'UserprofileController@Password')->name('user.Password');
+
+        // Deceased Members & Death Certificate
+        Route::get('deceased-members', [DeathCertificateController::class, 'index'])->name('user.deceased');
+        Route::get('death-certificate/{id}', [DeathCertificateController::class, 'certificate'])->name('user.death.certificate');
 
         // Chatbot Route
         Route::post('chatbot/chat', [ChatbotController::class, 'chat'])->name('chatbot.chat');

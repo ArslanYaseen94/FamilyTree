@@ -10,7 +10,7 @@ class TypeController extends Controller
     public function index()
     {
         // Logic to display types
-        $types = Types::all();
+        $types = Types::paginate(10);
         return view('admin-view.types.index', compact('types'));
     }
 

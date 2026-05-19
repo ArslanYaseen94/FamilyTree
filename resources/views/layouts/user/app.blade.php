@@ -248,10 +248,11 @@
                                     </div>
                                     <i class="feather-chevron-down"></i>
                                 </a>
-                                <div class="collapse ps-5 {{ request()->routeIs('user.messageboard', 'user.messageto') ? 'show' : '' }}" id="messageBoardSubmenu">
+                                <div class="collapse ps-5 {{ request()->routeIs('user.messageboard', 'user.messageto', 'user.send.message') ? 'show' : '' }}" id="messageBoardSubmenu">
                                     <ul class="nav flex-column">
                                         <li class="nav-item"><a href="{{ route('user.messageboard') }}" class="nav-link {{ request()->routeIs('user.messageboard') ? 'active' : '' }}" style="font-size: 12px">{{ __('messages.Messages to All Members') }}</a></li>
-                                        <li class="nav-item"><a href="{{ route('user.messageto') }}" class="nav-link {{ request()->routeIs('user.messageto') ? 'active' : '' }}" style="font-size: 12px">{{ __('messages.Messages from Members') }}</a></li>
+                                        <li class="nav-item"><a href="{{ route('user.messageto') }}" class="nav-link {{ request()->routeIs('user.messageto') ? 'active' : '' }}" style="font-size: 12px">{{ __('messages.Messages to You') }}</a></li>
+                                        <li class="nav-item"><a href="{{ route('user.send.message') }}" class="nav-link {{ request()->routeIs('user.send.message') ? 'active' : '' }}" style="font-size: 12px">{{ __('messages.Send Message') }}</a></li>
                                     </ul>
                                 </div>
                             </li>
@@ -261,6 +262,9 @@
 
                             <li><a href="{{ route('user.photos') }}" class="nav-content-bttn open-font {{ request()->routeIs('user.photos') ? 'active' : '' }}">
                                     <i class="feather-users btn-round-md bg-primary-gradiant me-3"></i><span>{{ __('messages.Photo Uploading') }}</span></a></li>
+
+                            <li><a href="{{ route('user.deceased') }}" class="nav-content-bttn open-font {{ request()->routeIs('user.deceased', 'user.death.certificate') ? 'active' : '' }}">
+                                    <i class="feather-file-text btn-round-md bg-primary-gradiant me-3"></i><span>{{ __('messages.Death Certificates') }}</span></a></li>
 
                             <li><a href="{{ route('user.news') }}" class="nav-content-bttn open-font {{ request()->routeIs('user.news',"user.news.create","user.news.edit") ? 'active' : '' }}">
                                     <i class="feather-users btn-round-md bg-primary-gradiant me-3"></i><span>{{ __('messages.News') }}</span></a></li>
@@ -358,12 +362,16 @@
                         </a>
                         <div class="collapse ps-3 {{ $isMessageActive ? 'show' : '' }}" id="mobileMessageMenu">
                             <a href="{{ route('user.messageboard') }}"
-                                class="nav-link small {{ request()->routeIs('user.messageboard', 'user.send.message') ? 'active fw-bold text-primary' : '' }}">
+                                class="nav-link small {{ request()->routeIs('user.messageboard') ? 'active fw-bold text-primary' : '' }}">
                                 {{ __('messages.Messages to All Members') }}
                             </a>
                             <a href="{{ route('user.messageto') }}"
                                 class="nav-link small {{ request()->routeIs('user.messageto') ? 'active fw-bold text-primary' : '' }}">
-                                {{ __('messages.Messages from Members') }}
+                                {{ __('messages.Messages to You') }}
+                            </a>
+                            <a href="{{ route('user.send.message') }}"
+                                class="nav-link small {{ request()->routeIs('user.send.message') ? 'active fw-bold text-primary' : '' }}">
+                                {{ __('messages.Send Message') }}
                             </a>
                         </div>
                     </li>
@@ -381,6 +389,14 @@
                         <a href="{{ route('user.photos') }}"
                             class="nav-link {{ request()->routeIs('user.photos') ? 'active fw-bold text-primary' : '' }}">
                             <i class="feather-image me-2"></i> {{ __('messages.Photo Uploading') }}
+                        </a>
+                    </li>
+
+                    {{-- Death Certificates --}}
+                    <li>
+                        <a href="{{ route('user.deceased') }}"
+                            class="nav-link {{ request()->routeIs('user.deceased', 'user.death.certificate') ? 'active fw-bold text-primary' : '' }}">
+                            <i class="feather-file-text me-2"></i> {{ __('messages.Death Certificates') }}
                         </a>
                     </li>
 
@@ -510,6 +526,14 @@
         toastr.error("{{ session(__('messages.error')) }}", '{{ __(__("messages.error")) }}', {
             timeOut: 5000
         });
+    </script>
+    @endif
+
+    @if($errors->any())
+    <script>
+        @foreach($errors->all() as $error)
+            toastr.error("{{ $error }}", '{{ __("messages.Error") }}', { timeOut: 5000 });
+        @endforeach
     </script>
     @endif
 

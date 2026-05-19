@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\UserRequest;
 
+use App\Support\MemberLifeDateValidator;
 use Illuminate\Foundation\Http\FormRequest;
 
 class MemberStoreRequest extends FormRequest
 {
     public function authorize()
     {
-        return true; // Change this based on your authorization logic
+        return true;
     }
 
     public function rules()
@@ -40,5 +41,10 @@ class MemberStoreRequest extends FormRequest
             'images' => 'nullable|array',
             'images.*' => 'file|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        MemberLifeDateValidator::addAfterRules($validator, $this);
     }
 }

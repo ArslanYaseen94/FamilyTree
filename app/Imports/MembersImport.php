@@ -8,17 +8,23 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 class MembersImport implements ToModel, WithHeadingRow
 {
+    protected $familyId;
+
+    public function __construct($familyId)
+    {
+        $this->familyId = $familyId;
+    }
+
     public function model(array $row)
     {
         return new Member([
-            'id'            => $row['id'],
-            'family_id'     => $row['family_id'],
-            'parent_id'     => $row['parent_id'],
+            'family_id'     => $this->familyId,
+            'parent_id'     => $row['parent_id'] ?? 0,
             'firstname'     => $row['first_name'],
             'lastname'      => $row['last_name'],
             'type'          => $row['type'],
             'gender'        => $row['gender'],
-            'death'         => $row['death'],
+            'death'         => $row['death'] ?? 0,
             'birthdate'     => $row['birthdate'],
             'marriage_date' => $row['marriage_date'],
             'deathdate'     => $row['deathdate'],

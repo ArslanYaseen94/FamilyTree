@@ -17,7 +17,13 @@ class ImportController extends Controller
 {
     public function index()
     {
-        return view("user-view.import.index");
+        $userId = Auth::guard('web')->id();
+        $families = FamilyTree::where('ownerId', $userId)
+            ->where('Status', '!=', 2)
+            ->orderBy('id', 'desc')
+            ->get(['id', 'familyid']);
+
+        return view("user-view.import.index", compact('families'));
     }
 
     public function export()
@@ -85,12 +91,94 @@ class ImportController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'excel_file' => 'required|mimes:xlsx,xls,csv',
+            'family_id' => 'required|integer|exists:tbl_familytree,id',
+            'excel_file' => 'required|file|mimes:csv,txt',
+        ], [
+            'family_id.required' => __('messages.Please select a family tree.'),
+            'excel_file.mimes' => __('messages.Only CSV files are allowed.'),
         ]);
 
-        Excel::import(new ImportsMembersImport, $request->file('excel_file'));
+        $userId = Auth::guard('web')->id();
+        $familyId = (int) $request->family_id;
 
-        return back()
-         ->with(__('messages.success'), __('messages.Members imported successfully.'));
+        $ownsFamily = FamilyTree::where('id', $familyId)
+            ->where('ownerId', $userId)
+            ->where('Status', '!=', 2)
+            ->exists();
+
+        if (!$ownsFamily) {
+            return back()->with(__('messages.error'), __('messages.You do not own this family tree.'));
+        }
+
+        $file = $request->file('excel_file');
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        if ($extension !== 'csv') {
+            return back()->with(__('messages.error'), __('messages.Only CSV files are allowed.'));
+        }
+
+        $handle = fopen($file->getRealPath(), 'r');
+        $header = fgetcsv($handle);
+        fclose($handle);
+
+        if (!$header) {
+            return back()->with(__('messages.error'), __('messages.The CSV file is empty or cannot be read.'));
+        }
+
+        $requiredColumns = [
+            'parent_id', 'first_name', 'last_name', 'type',
+            'gender', 'death', 'birthdate', 'marriage_date', 'deathdate', 'user',
+            'photo', 'avatar', 'facebook', 'twitter', 'instagram', 'email',
+            'tel', 'mobile', 'site', 'birthplace', 'deathplace', 'profession',
+            'company', 'interests', 'bio', 'images', 'created_at'
+        ];
+
+        $header = array_map('trim', $header);
+        $header = array_map('strtolower', $header);
+
+        $missingColumns = array_diff($requiredColumns, $header);
+
+        if (!empty($missingColumns)) {
+            return back()->with(__('messages.error'), __('messages.CSV is missing required columns:') . ' ' . implode(', ', $missingColumns));
+        }
+
+        try {
+            Excel::import(new ImportsMembersImport($familyId), $file);
+        } catch (\Exception $e) {
+            return back()->with(__('messages.error'), __('messages.Import failed. Please check your CSV data.'));
+        }
+
+        return back()->with(__('messages.success'), __('messages.Members imported successfully.'));
+    }
+
+    public function downloadSample()
+    {
+        $headers = [
+            'parent_id', 'first_name', 'last_name', 'type',
+            'gender', 'death', 'birthdate', 'marriage_date', 'deathdate', 'user',
+            'photo', 'avatar', 'facebook', 'twitter', 'instagram', 'email',
+            'tel', 'mobile', 'site', 'birthplace', 'deathplace', 'profession',
+            'company', 'interests', 'bio', 'images', 'created_at'
+        ];
+
+        $sampleRow = [
+            '0', 'John', 'Doe', '1',
+            '2', '0', '1990-01-15', '2015-06-20', '', '',
+            '', '1', 'https://facebook.com/johndoe', '@johndoe', '@johndoe', 'john@example.com',
+            '123-456-7890', '098-765-4321', 'https://johndoe.com', 'New York', '', 'Engineer',
+            'Tech Corp', 'Music, Travel', 'A short bio here.', '', '2026-01-01 00:00:00'
+        ];
+
+        $callback = function () use ($headers, $sampleRow) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $headers);
+            fputcsv($file, $sampleRow);
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="members_sample_template.csv"',
+        ]);
     }
 }

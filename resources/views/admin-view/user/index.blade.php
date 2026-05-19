@@ -19,7 +19,7 @@
                  <h4>{{ __('messages.User') }} </h4>
              </div>
              <div class="table-responsive">
-                 <table id="example1" class="table table-bordered table-striped">
+                 <table id="example1" class="table table-bordered table-striped" style="width:100%">
                      <thead class="table-dark">
                          <tr>
                              <th class="wd-25p">{{ __('messages.membershipStatus') }} </th>
@@ -80,6 +80,9 @@
                      </tbody>
                  </table>
              </div>
+             <div class="d-flex justify-content-end mt-3">
+                 {{ $UserInfo->links('pagination::bootstrap-5') }}
+             </div>
          </div>
      </div>
      </div>
@@ -137,21 +140,24 @@
          </div>
      </div>
  @endsection
- @section('scripts')
-     <script>
-         $(function() {
-             'use strict'
-             $('#example1').DataTable({
-                 User: {
-                     searchPlaceholder: 'Search...',
-                     sSearch: '',
-                 }
-             });
-             // Select2
-             $('.dataTables_length select').select2({
-                 minimumResultsForSearch: Infinity
-             });
-         });
+@section('scripts')
+    <script>
+        $(function() {
+            'use strict'
+            $('#example1').DataTable({
+                paging: false,
+                info: false,
+                lengthChange: false,
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search records"
+                }
+            });
+            // Select2
+            $('.dataTables_length select').select2({
+                minimumResultsForSearch: Infinity
+            });
+        });
 
          $('.deactivate-User-btn').click(function() {
              var UserId = $(this).data('id');
@@ -245,15 +251,4 @@
              });
          });
      </script>
-     <script>
-         $(document).ready(function() {
-             $('#example1').DataTable({
-                 responsive: true,
-                 language: {
-                     search: "_INPUT_",
-                     searchPlaceholder: "Search records"
-                 }
-             });
-         });
-     </script>
- @endsection
+@endsection

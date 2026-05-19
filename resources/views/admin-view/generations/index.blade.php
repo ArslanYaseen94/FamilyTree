@@ -72,12 +72,15 @@
                      @endif
                  </tbody>
              </table>
+         <div class="d-flex justify-content-end mt-3">
+             {{ $types->links('pagination::bootstrap-5') }}
+         </div>
          </div>
      </div>
- </div>
+</div>
 
- </div>
- <div class="modal fade" id="deactivateUserModal" tabindex="-1" role="dialog"
+</div>
+<div class="modal fade" id="deactivateUserModal" tabindex="-1" role="dialog"
      aria-labelledby="deactivateUserModalLabel" aria-hidden="true">
      <div class="modal-dialog modal-dialog-centered">
          <div class="modal-content">
@@ -241,14 +244,20 @@
  </script>
  <script>
      $(document).ready(function() {
-         $('#messagesTable').DataTable({
-             "pageLength": 10,
-             "order": [],
-             "columnDefs": [{
-                 "orderable": false,
-                 "targets": 2
-             }]
-         });
+        $('#messagesTable').DataTable({
+            "paging": false,
+            "info": false,
+            "lengthChange": false,
+            "order": [],
+            "language": {
+                "search": "_INPUT_",
+                "searchPlaceholder": "Search records"
+            },
+            "columnDefs": [{
+                "orderable": false,
+                "targets": 2
+            }]
+        });
      });
  </script>
  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

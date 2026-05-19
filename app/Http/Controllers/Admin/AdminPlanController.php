@@ -13,7 +13,7 @@ class AdminPlanController extends Controller
     public function index()
     {
         // Your admin dashboard logic here
-        $PlanInfo = Plan::where('Status','=','0')->get();
+        $PlanInfo = Plan::where('Status','=','0')->paginate(10);
         return view("admin-view.plan.index", compact("PlanInfo"));
     }
 

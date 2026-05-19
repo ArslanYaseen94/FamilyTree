@@ -299,7 +299,7 @@ $generations = \App\Models\Generations::where(['is_active' => 1])->get();
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form action="{{ route("user.addmember.store") }}" enctype="multipart/form-data" method="post">
+            <form id="addmemberform" action="{{ route("user.addmember.store") }}" enctype="multipart/form-data" method="post">
                 @csrf
                 <div id="form-error" class="alert alert-danger light alert-dismissible fade show" style="display:none;">
                 </div>
@@ -842,26 +842,43 @@ $generations = \App\Models\Generations::where(['is_active' => 1])->get();
             }
         });
     });
-    $('#editMemberForm').on('submit', function(e) {
+    $('body').on('submit', '#editMemberForm', function(e) {
         e.preventDefault();
+        var form = this;
+
+        if (!window.validateMemberLifeDates(form)) {
+            return;
+        }
 
         $.ajax({
-            url: $(this).attr('action'), // URL from the form action attribute
-            method: 'PUT',
-            data: $(this).serialize(), // Serialize form data
+            url: $(form).attr('action'),
+            method: 'POST',
+            data: $(form).serialize(),
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
             success: function(response) {
-                if (response.success) {
-                    // Close modal and reload table if successful
-                    $('#editMemberModal').modal('hide');
-                    window.location.reload;
-                } else {
-                    $('#form-error').text('An error occurred. Please try again.').show();
-                }
+                toastr.success(response.message || '{{ __("messages.Update information successfully") }}');
+                $('#editMemberModal').modal('hide');
+                setTimeout(function() { window.location.reload(); }, 800);
             },
             error: function(xhr) {
-                $('#form-error').text('An error occurred. Please try again.').show();
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    window.showMemberValidationToasts(xhr.responseJSON.errors);
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    toastr.error(xhr.responseJSON.message);
+                } else {
+                    toastr.error('{{ __("messages.Something went wrong.") }}');
+                }
             }
         });
+    });
+
+    $('body').on('shown.bs.modal', '#editMemberModal', function() {
+        const form = document.getElementById('editMemberForm');
+        if (form) window.toggleMemberDeathDateField(form);
     });
 
     //Delete Member
@@ -940,60 +957,61 @@ $generations = \App\Models\Generations::where(['is_active' => 1])->get();
     });
 
     $(document).ready(function() {
+        $('#addnewtree').on('shown.bs.modal', function() {
+            const form = document.getElementById('addmemberform');
+            if (form) window.toggleMemberDeathDateField(form);
+        });
+
         $('#addmemberform').on('submit', function(e) {
             e.preventDefault();
+            const form = this;
+
+            if (!window.validateMemberLifeDates(form)) {
+                return;
+            }
+
             $('#form-error').hide();
-            $('#addmember').prop('disabled', true);
-            $('#addmember').html(
-                '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...'
-            );
-            var formData = new FormData(this);
+            const $btn = $(form).find('button[type="submit"]');
+            $btn.prop('disabled', true);
+            const originalHtml = $btn.html();
+            $btn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...');
+
+            var formData = new FormData(form);
 
             $.ajax({
                 url: "{{ route('user.addmember.store') }}",
                 method: 'POST',
                 data: formData,
-                processData: false, // Prevent jQuery from automatically transforming the data into a query string
-                contentType: false, // Prevent jQuery from setting the Content-Type request header
+                processData: false,
+                contentType: false,
                 headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 },
                 success: function(response) {
-                    $('#addmember').prop('disabled', false);
-                    $('#addmember').html('Save');
-                    $('#form-success').text(response.message).show();
-                    setTimeout(function() {
-                        $('#form-success').fadeOut();
-                        window.location.reload();
-                    }, 1000);
+                    $btn.prop('disabled', false);
+                    $btn.html(originalHtml);
+                    toastr.success(response.message || '{{ __("messages.Member and user created successfully.") }}');
+                    setTimeout(function() { window.location.reload(); }, 1000);
                 },
                 error: function(xhr) {
-                    $('#addmember').prop('disabled', false);
-                    $('#addmember').html('Save');
+                    $btn.prop('disabled', false);
+                    $btn.html(originalHtml);
 
                     if (xhr.responseJSON && xhr.responseJSON.errors) {
-                        var errors = xhr.responseJSON.errors;
-                        var errorHtml = '<ul>';
-                        $.each(errors, function(key, value) {
-                            errorHtml += '<li>' + value +
-                                '</li>'; // Append each error as list item
-                        });
-                        errorHtml += '</ul>';
-
-                        // Display errors in a specific element with id="login-error"
-                        $('#form-error').html(errorHtml).show();
+                        window.showMemberValidationToasts(xhr.responseJSON.errors);
                     } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                        // Display single error message
-                        $('#form-error').text(xhr.responseJSON.message).show();
+                        toastr.error(xhr.responseJSON.message);
                     } else {
-                        $('#form-error').text('An error occurred. Please try again.')
-                            .show();
+                        toastr.error('{{ __("messages.Something went wrong.") }}');
                     }
                 }
             });
         });
     });
 </script>
+@include('partials.member-life-date-validation')
 <script>
     document.getElementById("generatePDF").addEventListener("click", async () => {
         const lang = document.getElementById("languageSelect").value;

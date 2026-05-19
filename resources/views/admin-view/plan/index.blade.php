@@ -60,6 +60,9 @@
                      </tbody>
                  </table>
              </div>
+             <div class="d-flex justify-content-end mt-3">
+                 {{ $PlanInfo->links('pagination::bootstrap-5') }}
+             </div>
          </div><!-- component-section -->
      </div><!-- content-body -->
      </div><!-- content -->
@@ -251,16 +254,15 @@
      <script>
          $(function() {
              'use strict'
-             $('#example1').DataTable({
-                 plan: {
-                     searchPlaceholder: 'Search...',
-                     sSearch: '',
-                 }
-             });
-             // Select2
-             $('.dataTables_length select').select2({
-                 minimumResultsForSearch: Infinity
-             });
+            $('#example1').DataTable({
+                paging: false,
+                info: false,
+                lengthChange: false,
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search records"
+                }
+            });
          });
 
          $(document).ready(function() {
@@ -439,15 +441,4 @@
              });
          });
      </script>
-     <script>
-         $(document).ready(function() {
-             $('#example1').DataTable({
-                 responsive: true,
-                 language: {
-                     search: "_INPUT_",
-                     searchPlaceholder: "Search records"
-                 }
-             });
-         });
-     </script>
- @endsection
+@endsection

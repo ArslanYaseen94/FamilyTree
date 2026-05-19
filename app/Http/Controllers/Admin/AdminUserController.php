@@ -52,7 +52,7 @@ class AdminUserController extends Controller
     }
     public function index()
     {
-        $UserInfo = User::where('Status', '!=', '2')->get();
+        $UserInfo = User::where('Status', '!=', '2')->paginate(10);
         return view("admin-view.user.index", compact("UserInfo"));
     }
 

@@ -318,7 +318,7 @@
             <div class="modal-header">
                 <h5 class="fw-700 mb-0 mt-0 font-md text-grey-900" id="addnewtreeLabel"> {{ __('messages.Create FamilyTree') }}</h5>
             </div>
-            <form action="{{ route('user.addfirstmember.store') }}" method="POST" enctype="multipart/form-data">
+            <form id="firstMemberForm" action="{{ route('user.addfirstmember.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="self_id" id="self_id" value="0">
                 <div class="modal-body">
@@ -677,23 +677,32 @@
 
         $('body').on('click', '.feather-edit', function() {
             let memberId = $(this).data('id');
-            // Fetch modal content
             $.ajax({
                 url: `/user/modal/edit/${memberId}`,
                 method: 'GET',
                 success: function(response) {
-                    // Insert modal content into the page
                     $('body').append(response);
-                    $('#editMemberModal').modal('show');
-                    // Update the form action URL
                     $('#editMemberForm').attr('action', `/user/members/${memberId}`);
+                    $('#editMemberModal').modal('show');
                 },
                 error: function() {
                     alert('An error occurred while fetching the modal.');
                 }
             });
         });
+
+        $('#firstMemberForm').on('submit', function(e) {
+            if (!window.validateMemberLifeDates(this)) {
+                e.preventDefault();
+            }
+        });
+
+        $('#addnewtree').on('shown.bs.modal', function() {
+            const form = document.getElementById('firstMemberForm');
+            if (form) window.toggleMemberDeathDateField(form);
+        });
     </script>
+    @include('partials.member-life-date-validation')
 @endsection
 
 @push('scripts')

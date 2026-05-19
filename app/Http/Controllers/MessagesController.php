@@ -20,7 +20,7 @@ class MessagesController extends Controller
     public function messageto()
     {
 
-        $messages = Messages::where("sender_id", 0)->get();
+        $messages = Messages::where("sender_id", 0)->paginate(10);
         return view("admin-view.messages.messageto", compact('messages'));
     }
     public function usermessages()
@@ -37,7 +37,12 @@ class MessagesController extends Controller
             ->where('email', '!=', '')
             ->get();
 
-        return view('user-view.messages.messagefrom', compact('members'));
+        $sentMessages = Messages::where('sender_id', $auth->id)
+            ->whereNull('parent_id')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return view('user-view.messages.messagefrom', compact('members', 'sentMessages'));
     }
 
     public function sendEmailToMembers(Request $request)
@@ -67,6 +72,16 @@ class MessagesController extends Controller
             } catch (\Exception $e) {
                 $failed++;
             }
+
+            $recipientUser = User::where('email', $member->email)->first();
+
+            Messages::create([
+                'sender_id'    => $auth->id,
+                'recipient_id' => $recipientUser ? $recipientUser->id : 0,
+                'subject'      => $request->subject,
+                'body'         => $request->body,
+                'status'       => 'sent',
+            ]);
         }
 
         $msg = "Email sent to {$sent} member(s).";
@@ -79,7 +94,11 @@ class MessagesController extends Controller
     public function usermessagesto()
     {
         $auth = Auth::user();
-        $messages = Messages::where('recipient_id', $auth->id)->get();
+        $messages = Messages::where('recipient_id', $auth->id)
+            ->whereNull('parent_id')
+            ->with('sender')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
         return view("user-view.messages.messageto", compact('messages'));
     }
     public function create()

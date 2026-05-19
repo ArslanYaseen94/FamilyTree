@@ -55,7 +55,13 @@
                                     $stripeActive = $gateway && (string) $gateway->stripe_status === '1';
                                 @endphp
 
-                                @if (!$paypalActive && !$stripeActive)
+                                @if (auth()->user()->membership_plan === $membership->name)
+                                    <div class="d-grid mt-3">
+                                        <button type="button" class="btn btn-success" disabled>
+                                            <i class="feather-check-circle me-1"></i> {{ __('messages.Subscribed') }}
+                                        </button>
+                                    </div>
+                                @elseif (!$paypalActive && !$stripeActive)
                                     <div class="alert alert-warning mt-3 mb-0">
                                         {{ __('messages.Payment method is not available right now.') }}
                                     </div>

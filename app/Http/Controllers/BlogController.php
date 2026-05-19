@@ -36,6 +36,13 @@ class BlogController extends Controller
     }
 public function store(Request $request)
 {
+    $request->validate([
+        'title' => 'required|string|max:255',
+        'content' => 'required|string',
+        'featured_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,bmp,webp,svg|max:5120',
+        'status' => 'required|in:draft,published,archived',
+    ]);
+
     $imagePath = null;
 
     if ($request->hasFile('featured_image')) {

@@ -123,6 +123,42 @@
                 </div>
             </div>
 
+            {{-- Sent Messages History --}}
+            @if(isset($sentMessages) && $sentMessages->count() > 0)
+            <div class="card shadow rounded-4 mt-4">
+                <div class="card-header bg-dark text-white rounded-top-4 p-4">
+                    <h5 class="mb-0"><i class="feather-list me-2"></i>{{ __('messages.Sent Messages History') }}</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>{{ __('messages.Subject') }}</th>
+                                    <th>{{ __('messages.Message') }}</th>
+                                    <th>{{ __('messages.Sent At') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($sentMessages as $index => $msg)
+                                <tr>
+                                    <td>{{ $sentMessages->firstItem() + $index }}</td>
+                                    <td><strong>{{ $msg->subject }}</strong></td>
+                                    <td>{{ Str::limit($msg->body, 80) }}</td>
+                                    <td><small>{{ $msg->created_at->format('d M Y, h:i A') }}</small></td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-3">
+                        {{ $sentMessages->links('pagination::bootstrap-5') }}
+                    </div>
+                </div>
+            </div>
+            @endif
+
         </div>
     </div>
 </div>

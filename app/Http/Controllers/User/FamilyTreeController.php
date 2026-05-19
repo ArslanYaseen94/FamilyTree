@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Http\Requests\UserRequest\FamilyTreeStoreRequest;
 use App\Http\Requests\UserRequest\FamilyTreeUpdateRequest;
 use App\Http\Requests\UserRequest\MemberStoreRequest;
+use App\Http\Requests\UserRequest\MemberUpdateRequest;
+use App\Support\MemberLifeDateValidator;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Auth;
@@ -216,11 +218,12 @@ public function addmember($id)
             $member->type = $type;
             $member->generation = $request->generation;
             $member->gender = $gender;
-            $member->death = $request->has('death') ? 1 : 0;
+            $lifeDates = MemberLifeDateValidator::normalizeDates($request);
+            $member->death = $lifeDates['death'];
             $member->village = $request->village;
             $member->birthdate = $request->birthdate;
             $member->marriagedate = $request->marriagedate;
-            $member->deathdate = $request->deathdate;
+            $member->deathdate = $lifeDates['deathdate'];
             $member->user = $request->user;
             $member->photo = $photo;
             $member->avatar = $request->avatar;
@@ -260,10 +263,15 @@ public function addmember($id)
             $user->gender = $gender;
             $user->phone = $mobile;
             $user->save();
-            return redirect()->back()->with('success','messages.Member and user created successfully');
-            
+            $message = __('messages.Member and user created successfully.');
+
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json(['message' => $message]);
+            }
+
+            return redirect()->back()->with(__('messages.success'), $message);
+
         } catch (Exception $e) {
-            dd($e->getMessage());
             return response()->json([
                 'error' => __('messages.Failed to create member or user'),
                 'details' => $e->getMessage()
@@ -272,10 +280,23 @@ public function addmember($id)
     }
     public function firstmemberstore(Request $request)
     {
-        // Validate Family Id (CNIC format) early to prevent bad data
         $request->validate([
             'family_id' => ['required', 'regex:/^\d{5}-\d{7}-\d{1}$/'],
+            'firstname' => 'required|string|max:255',
+            'lastname' => 'required|string|max:255',
+            'gender' => 'required|integer',
+            'birthdate' => 'nullable|date',
+            'marriagedate' => 'nullable|date',
+            'deathdate' => 'nullable|date',
         ]);
+
+        $lifeValidator = \Illuminate\Support\Facades\Validator::make($request->all(), []);
+        MemberLifeDateValidator::addAfterRules($lifeValidator, $request);
+        if ($lifeValidator->fails()) {
+            return redirect()->back()->withErrors($lifeValidator)->withInput();
+        }
+
+        $lifeDates = MemberLifeDateValidator::normalizeDates($request);
 
         // Check if family tree already exists
         $familyTreeExists = FamilyTree::where('familyid', $request->family_id)->first();
@@ -334,11 +355,12 @@ public function addmember($id)
             $member->lastname = $lastname;
             $member->type = 4;
             $member->gender = $gender;
-            $member->death = $request->has('death') ? 1 : 0;
+            $lifeDates = MemberLifeDateValidator::normalizeDates($request);
+            $member->death = $lifeDates['death'];
             $member->village = $request->village;
             $member->birthdate = $request->birthdate;
             $member->marriagedate = $request->marriagedate;
-            $member->deathdate = $request->deathdate;
+            $member->deathdate = $lifeDates['deathdate'];
             $member->user = $request->user;
             $member->photo = $photo;
             $member->avatar = $request->avatar;
@@ -392,15 +414,16 @@ public function addmember($id)
         return view('user-view.familytree.editmember', compact('member'));
     }
 
-public function updateMember(Request $request, $id)
+public function updateMember(MemberUpdateRequest $request, $id)
 {
-    // Find the member by ID
     $member = Member::findOrFail($id);
 
-    // Check if the current user owns this family
     $familyOwner = FamilyTree::where('id', $member->family_id)->where('ownerId', Auth::guard("web")->user()->id)->first();
     if (!$familyOwner) {
-        return response()->json(['error' => __('messages.Unauthorized')], 403);
+        if ($request->ajax() || $request->expectsJson()) {
+            return response()->json(['message' => __('messages.Unauthorized')], 403);
+        }
+        return redirect()->back()->withErrors(__('messages.Unauthorized'));
     }
 
     $data = $request->only([
@@ -409,11 +432,9 @@ public function updateMember(Request $request, $id)
         'type',
         'generation',
         'gender',
-        'death',
         'village',
         'birthdate',
         'marriagedate',
-        'deathdate',
         'user',
         'facebook',
         'twitter',
@@ -435,18 +456,25 @@ public function updateMember(Request $request, $id)
         'business_info',
     ]);
 
-    // Form field is named "background_details" but the column is "background"
     if (array_key_exists('background_details', $data)) {
         $data['background'] = $data['background_details'];
         unset($data['background_details']);
     }
 
-    // Checkbox: present means alive, absent means deceased
-    $data['death'] = $request->has('death') ? 1 : 0;
+    $lifeDates = MemberLifeDateValidator::normalizeDates($request);
+    $data['death'] = $lifeDates['death'];
+    $data['deathdate'] = $lifeDates['deathdate'];
 
     $member->update($data);
 
-    return redirect()->route('user.addmember', ['id' => Crypt::encryptString($member->family_id)]);
+    $message = __('messages.Update information successfully');
+
+    if ($request->ajax() || $request->expectsJson()) {
+        return response()->json(['message' => $message]);
+    }
+
+    return redirect()->route('user.addmember', ['id' => Crypt::encryptString($member->family_id)])
+        ->with(__('messages.success'), $message);
 }
 
 

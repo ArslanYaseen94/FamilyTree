@@ -37,14 +37,14 @@ class PhotosController extends Controller
             File::delete($fullPath);
 
             return response()->json([
-                __('messages.success') => true,
+                'success' => true,
                 'message' => ucfirst($type) . ' deleted successfully.',
                 'type' => $type,
             ]);
         }
 
         return response()->json([
-            __('messages.success') => false,
+            'success' => false,
             'message' => 'File not found or not allowed.',
         ]);
     }
@@ -66,38 +66,44 @@ class PhotosController extends Controller
     }
     public function uploadPhoto(Request $request)
     {
+        $request->validate([
+            'media' => 'required|array',
+            'media.*' => 'required|file|mimes:jpeg,jpg,png,gif,bmp,webp,svg|max:5120',
+        ], [
+            'media.*.mimes' => __('messages.Only image files are allowed (jpeg, jpg, png, gif, bmp, webp, svg).'),
+            'media.*.max' => __('messages.Each image must be less than 5MB.'),
+        ]);
 
         $userId = Auth::id();
         $folderPath = public_path('uploads/' . $userId);
 
-        // Create the folder if it doesn't exist
         if (!File::exists($folderPath)) {
             File::makeDirectory($folderPath, 0755, true);
         }
 
-        // Get existing file count
         $existingFiles = File::files($folderPath);
         $existingCount = count($existingFiles);
 
         $uploads = $request->file('media');
         $uploadCount = count($uploads);
 
-        // Check if folder limit exceeded
         if (($existingCount + $uploadCount) > 300) {
-            return redirect()->back()->withErrors(['media' => 'Upload limit exceeded. You can only have up to 300 files.']);
+            return redirect()->back()
+                ->with(__('messages.error'), __('messages.Upload limit exceeded. You can only have up to 300 photos.'));
         }
 
-        // Process each file
         foreach ($uploads as $file) {
-            $extension = $file->getClientOriginalExtension();
-            $type = $file->getMimeType();
-            $prefix = str_contains($type, 'video') ? 'video_' : 'media_';
-            $fileName = $prefix . time() . '_' . uniqid() . '.' . $extension;
+            $mime = $file->getMimeType();
+            if (!str_starts_with($mime, 'image/')) {
+                continue;
+            }
 
+            $extension = $file->getClientOriginalExtension();
+            $fileName = 'media_' . time() . '_' . uniqid() . '.' . $extension;
             $file->move($folderPath, $fileName);
         }
 
         return redirect()->back()
-        ->with(__('messages.success'), __('messages.Media uploaded successfully!'));
+            ->with(__('messages.success'), __('messages.Photos uploaded successfully!'));
     }
 }

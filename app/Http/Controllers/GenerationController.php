@@ -10,7 +10,7 @@ class GenerationController extends Controller
         public function index()
     {
         // Logic to display types
-        $types = Generations::all();
+        $types = Generations::paginate(10);
         return view('admin-view.generations.index', compact('types'));
     }
 

@@ -36,8 +36,9 @@
 
                             <div class="mb-3">
                                 <label class="form-label"> {{ __('messages.Featured Image') }}</label>
-                                <input type="file" name="featured_image" class="form-control">
-                                @if (isset($blogs))
+                                <input type="file" name="featured_image" id="featuredImage" class="form-control" accept="image/jpeg,image/jpg,image/png,image/gif,image/bmp,image/webp,image/svg+xml">
+                                <small class="text-muted">{{ __('messages.Only image files allowed: jpeg, jpg, png, gif, bmp, webp, svg. Max 5MB.') }}</small>
+                                @if (isset($blogs) && $blogs->featured_image)
                                 <img width="100" height="100" src="{{ asset($blogs->featured_image) }}" alt=""
                                     class="mt-2 image-fluid">
                                 @endif
@@ -79,4 +80,31 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var imageInput = document.getElementById('featuredImage');
+    var allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp', 'image/svg+xml'];
+    var maxSize = 5 * 1024 * 1024;
+
+    imageInput.addEventListener('change', function() {
+        var file = this.files[0];
+        if (!file) return;
+
+        if (!allowedTypes.includes(file.type)) {
+            toastr.error("{{ __('messages.Only image files are allowed (jpeg, jpg, png, gif, bmp, webp, svg).') }}");
+            this.value = '';
+            return;
+        }
+
+        if (file.size > maxSize) {
+            toastr.error("{{ __('messages.Each image must be less than 5MB.') }}");
+            this.value = '';
+            return;
+        }
+    });
+});
+</script>
 @endsection

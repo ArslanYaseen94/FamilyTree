@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Models;
+
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -71,5 +73,43 @@ class Member extends Authenticatable
         public function family()
     {
         return $this->belongsTo(FamilyTree::class, 'family_id');
+    }
+
+    /**
+     * Age at death: full years, else full months, else total days between dates.
+     */
+    public function getAgeAtDeathFormatted(): ?string
+    {
+        if (!$this->birthdate || !$this->deathdate) {
+            return null;
+        }
+
+        try {
+            $birth = Carbon::parse($this->birthdate)->startOfDay();
+            $death = Carbon::parse($this->deathdate)->startOfDay();
+
+            if ($death->lt($birth)) {
+                return null;
+            }
+
+            $years = (int) $birth->diffInYears($death);
+            if ($years >= 1) {
+                $label = $years === 1 ? __('messages.year') : __('messages.years');
+                return $years . ' ' . $label;
+            }
+
+            $months = (int) $birth->diffInMonths($death);
+            if ($months >= 1) {
+                $label = $months === 1 ? __('messages.month') : __('messages.months');
+                return $months . ' ' . $label;
+            }
+
+            $days = (int) $birth->diffInDays($death);
+            $label = $days === 1 ? __('messages.day') : __('messages.days');
+
+            return $days . ' ' . $label;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }
